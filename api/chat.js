@@ -1,9 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
 
-const anthropic = new Anthropic({
-  apiKey: process.env.CLAUDE_API_KEY,
-});
-
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -14,14 +10,11 @@ export default async function handler(req, res) {
     return;
   }
 
-  // Handle GET requests for testing
   if (req.method === 'GET') {
     return res.status(200).json({ 
       message: 'Claude API is ready!',
       usage: 'Send POST request with messages array',
-      example: {
-        messages: [{ role: 'user', content: 'Hello Claude!' }]
-      }
+      example: { messages: [{ role: 'user', content: 'Hello Claude!' }] }
     });
   }
 
@@ -29,8 +22,28 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Handle POST requests for Claude
+  // Debug: Check if API key exists
+  const apiKey = process.env.CLAUDE_API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ 
+      error: 'API key not found',
+      debug: 'CLAUDE_API_KEY environment variable is missing'
+    });
+  }
+
+  // Debug: Check API key format (don't log the actual key!)
+  if (!apiKey.startsWith('sk-ant-')) {
+    return res.status(500).json({ 
+      error: 'API key format incorrect',
+      debug: `Key starts with: ${apiKey.substring(0, 7)}...`
+    });
+  }
+
   try {
+    const anthropic = new Anthropic({
+      apiKey: apiKey,
+    });
+
     const { messages, max_tokens = 1000 } = req.body;
 
     if (!messages || !Array.isArray(messages)) {
